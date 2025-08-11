@@ -111,12 +111,39 @@ async function findAndRemoveExistingGuest(name) {
     await Promise.all(deletePromises);
 }
 
+/**
+ * Borra todos los documentos de todas las listas de invitados.
+ */
+async function resetAllLists() {
+    showNotification("Restableciendo listas...");
+    const collections = ['attendees', 'not_attendees', 'maybe_attendees'];
+    const deletePromises = [];
+    for (const coll of collections) {
+        const collRef = collection(db, `artifacts/${eventId}/public/data/${coll}`);
+        const querySnapshot = await getDocs(collRef);
+        querySnapshot.forEach((doc) => {
+            deletePromises.push(deleteDoc(doc.ref));
+        });
+    }
+    await Promise.all(deletePromises);
+    showNotification("¡Todas las listas han sido borradas!");
+}
+
+
 // --- Event Listeners ---
 
 rsvpForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!userId) { return; }
     const name = nameInput.value.trim();
+
+    // **NUEVA FUNCIÓN DE RESTABLECIMIENTO**
+    if (name.toLowerCase() === 'restablecer') {
+        await resetAllLists();
+        rsvpForm.reset();
+        return;
+    }
+
     if (!name) {
         showNotification("Por favor, ingresa tu nombre.");
         return;
